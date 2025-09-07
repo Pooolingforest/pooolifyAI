@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Simple container constraints */
-:root {
-  color-scheme: light dark;
-}
-
 html,
 body,
 #root {

@@ -10,13 +10,11 @@ export async function postChat({
   token,
   sessionId,
   query,
-  model,
 }: {
   apiBase: string;
   token?: string;
   sessionId: string;
   query: string;
-  model: string;
 }): Promise<{ status: string; session_id: string; request_id: string }> {
   const resp = await fetch(`${apiBase.replace(/\/+$/, "")}/v1/chat`, {
     method: "POST",
@@ -24,7 +22,7 @@ export async function postChat({
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({ session_id: sessionId, query, options: { model } }),
+    body: JSON.stringify({ session_id: sessionId, query }),
   });
   if (!resp.ok) {
     throw new Error(

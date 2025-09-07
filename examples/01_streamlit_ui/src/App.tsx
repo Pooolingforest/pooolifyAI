@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   getConversation,
   isCompleted,
@@ -10,7 +12,6 @@ type Settings = {
   apiBase: string;
   token: string;
   sessionId: string;
-  model: string;
   autoRefresh: boolean;
   refreshMs: number;
   showInternal: boolean;
@@ -25,9 +26,6 @@ const defaultSettings: Settings = {
   sessionId:
     (typeof window !== "undefined" && (window as any).POOOLIFY_SESSION_ID) ||
     "demo",
-  model:
-    (typeof window !== "undefined" && (window as any).POOOLIFY_MODEL) ||
-    "gpt-5",
   autoRefresh: true,
   refreshMs: 1000,
   showInternal: false,
@@ -42,6 +40,33 @@ export default function App() {
   const timerRef = useRef<number | null>(null);
 
   const processing = useMemo(() => !!conv?.current_request_id, [conv]);
+  const status = processing ? "streaming" : "idle";
+
+  const lastAssistantMessageId = useMemo(() => {
+    if (!conv?.conversation?.length) return null as string | null;
+    for (let i = conv.conversation.length - 1; i >= 0; i--) {
+      const msg = conv.conversation[i];
+      if (msg?.type === "MESSAGE_TYPE_AI" && msg?.bubbleId)
+        return msg.bubbleId as string;
+    }
+    return null as string | null;
+  }, [conv]);
+
+  const latestThought = useMemo(() => {
+    if (!conv?.conversation?.length) return "";
+    for (let i = conv.conversation.length - 1; i >= 0; i--) {
+      const msg = conv.conversation[i];
+      if (msg?.type === "MESSAGE_TYPE_AI" && msg?.content?.thought)
+        return String(msg.content.thought);
+    }
+    return "";
+  }, [conv]);
+
+  const getAgentLabel = useCallback((agent?: string) => {
+    if (!agent) return "AI";
+    // simple prettifier; customize as needed
+    return agent.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+  }, []);
 
   const refreshConversation = useCallback(async () => {
     try {
@@ -89,7 +114,6 @@ export default function App() {
         token: settings.token,
         sessionId: settings.sessionId,
         query: prompt.trim(),
-        model: settings.model,
       });
       // immediate polling until completion or short timeout (optimistic)
       const start = Date.now();
@@ -117,7 +141,6 @@ export default function App() {
     settings.apiBase,
     settings.token,
     settings.sessionId,
-    settings.model,
     settings.refreshMs,
     refreshConversation,
   ]);
@@ -169,17 +192,6 @@ export default function App() {
                     setSettings((s) => ({ ...s, sessionId: e.target.value }))
                   }
                 />
-                <label className="block text-xs text-gray-600">Model</label>
-                <select
-                  className="w-full rounded border px-2 py-1"
-                  value={settings.model}
-                  onChange={(e) =>
-                    setSettings((s) => ({ ...s, model: e.target.value }))
-                  }
-                >
-                  <option value="gpt-5">gpt-5</option>
-                  <option value="gpt-5-high">gpt-5-high</option>
-                </select>
                 <div className="flex items-center justify-between pt-2">
                   <label className="flex items-center gap-2 text-xs">
                     <input
@@ -274,11 +286,155 @@ export default function App() {
                         <div className="mb-1 text-xs text-gray-600">
                           <span className="font-semibold">{role}</span> · {time}
                         </div>
-                        {text && (
-                          <div className="whitespace-pre-wrap text-sm">
-                            {text}
+                        {msg.agent && (
+                          <div className="flex items-center gap-2 mb-2 pb-1 border-b">
+                            <span className="inline-block h-2 w-2 rounded-full bg-purple-500" />
+                            <span className="text-xs font-medium text-purple-700">
+                              {getAgentLabel(msg.agent)}
+                            </span>
                           </div>
                         )}
+                        {text && (
+                          <div>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                a: (props) => (
+                                  <a
+                                    className="underline text-blue-600 hover:text-blue-500"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    {...props}
+                                  />
+                                ),
+                                p: (props) => (
+                                  <p
+                                    className="whitespace-pre-wrap leading-6"
+                                    {...props}
+                                  />
+                                ),
+                                ul: (props) => (
+                                  <ul
+                                    className="list-disc pl-5 space-y-1"
+                                    {...props}
+                                  />
+                                ),
+                                ol: (props) => (
+                                  <ol
+                                    className="list-decimal pl-5 space-y-1"
+                                    {...props}
+                                  />
+                                ),
+                                li: (props) => (
+                                  <li className="leading-6" {...props} />
+                                ),
+                                pre: (props) => (
+                                  <pre
+                                    className="rounded bg-gray-900 text-white p-3 text-[12px] overflow-x-auto"
+                                    {...props}
+                                  />
+                                ),
+                                code: ({ inline, children, ...props }: any) =>
+                                  inline ? (
+                                    <code
+                                      className="rounded bg-gray-200 px-1 py-0.5 text-[11px]"
+                                      {...props}
+                                    >
+                                      {children}
+                                    </code>
+                                  ) : (
+                                    <code {...props}>{children}</code>
+                                  ),
+                                table: (props) => (
+                                  <table
+                                    className="w-full text-left border-collapse"
+                                    {...props}
+                                  />
+                                ),
+                                thead: (props) => (
+                                  <thead className="border-b" {...props} />
+                                ),
+                                th: (props) => (
+                                  <th
+                                    className="px-2 py-1 font-semibold"
+                                    {...props}
+                                  />
+                                ),
+                                td: (props) => (
+                                  <td
+                                    className="px-2 py-1 align-top"
+                                    {...props}
+                                  />
+                                ),
+                                blockquote: (props) => (
+                                  <blockquote
+                                    className="border-l-2 pl-3 text-gray-600"
+                                    {...props}
+                                  />
+                                ),
+                                hr: (props) => (
+                                  <hr className="my-2" {...props} />
+                                ),
+                                h1: (props) => (
+                                  <h1
+                                    className="text-base font-bold"
+                                    {...props}
+                                  />
+                                ),
+                                h2: (props) => (
+                                  <h2
+                                    className="text-base font-bold"
+                                    {...props}
+                                  />
+                                ),
+                                h3: (props) => (
+                                  <h3
+                                    className="text-sm font-semibold"
+                                    {...props}
+                                  />
+                                ),
+                                h4: (props) => (
+                                  <h4
+                                    className="text-sm font-semibold"
+                                    {...props}
+                                  />
+                                ),
+                                h5: (props) => (
+                                  <h5
+                                    className="text-xs font-semibold"
+                                    {...props}
+                                  />
+                                ),
+                                h6: (props) => (
+                                  <h6
+                                    className="text-xs font-semibold"
+                                    {...props}
+                                  />
+                                ),
+                              }}
+                            >
+                              {text}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                        {status === "streaming" &&
+                          msg.bubbleId === lastAssistantMessageId && (
+                            <div className="mt-2 text-gray-600 text-sm">
+                              <div className="flex items-center gap-2">
+                                <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                                <span className="font-semibold">
+                                  Thinking...
+                                </span>
+                              </div>
+                              {latestThought && (
+                                <div className="mt-2">
+                                  <pre className="whitespace-pre-wrap text-xs text-gray-700 bg-gray-50 rounded p-2 max-h-40 overflow-y-auto">
+                                    {latestThought}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         {settings.showInternal &&
                           (thought || plan || route || decision) && (
                             <details className="mt-2">
@@ -307,12 +463,86 @@ export default function App() {
                               )}
                             </details>
                           )}
+                        {/* Tool results */}
+                        {content.tool_results &&
+                          content.tool_results.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                              {content.tool_results.map(
+                                (tool: any, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="bg-gray-50 rounded-lg p-3 text-xs border"
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                                      <span className="font-semibold text-green-700">
+                                        {tool.toolName || "Tool"} 실행
+                                      </span>
+                                      {tool.result?.latency_ms && (
+                                        <span className="text-gray-500">
+                                          ({tool.result.latency_ms}ms)
+                                        </span>
+                                      )}
+                                    </div>
+                                    {tool.result?.success &&
+                                      tool.result?.output?.body && (
+                                        <div className="space-y-2">
+                                          {tool.result.output.url && (
+                                            <div className="text-gray-600">
+                                              <span className="font-medium">
+                                                URL:
+                                              </span>{" "}
+                                              {tool.result.output.url}
+                                            </div>
+                                          )}
+                                          <div className="bg-gray-100 rounded p-2">
+                                            <div className="font-medium text-blue-700 mb-1">
+                                              응답 데이터:
+                                            </div>
+                                            <pre className="text-xs text-gray-800 overflow-x-auto max-h-40">
+                                              {JSON.stringify(
+                                                tool.result.output.body,
+                                                null,
+                                                2
+                                              )}
+                                            </pre>
+                                          </div>
+                                        </div>
+                                      )}
+                                    {!tool.result?.success && (
+                                      <div className="text-red-600">
+                                        실행 실패:{" "}
+                                        {tool.result?.error ||
+                                          "알 수 없는 오류"}
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          )}
                       </div>
                     );
                   })}
                 </div>
               )}
             </section>
+
+            {status === "streaming" && !lastAssistantMessageId && (
+              <div className="text-gray-600 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="font-semibold">Thinking...</span>
+                </div>
+                {latestThought && (
+                  <div className="mt-2">
+                    <pre className="whitespace-pre-wrap text-xs text-gray-700 bg-gray-50 rounded p-2 max-h-40 overflow-y-auto">
+                      {latestThought}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
 
             <section className="rounded-lg border bg-white p-3 shadow-sm">
               <div className="mb-2 text-sm font-medium">Compose</div>

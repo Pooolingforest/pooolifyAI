@@ -22,7 +22,7 @@ Environment (optional)
   - POOOLIFY_API_BASE (default http://127.0.0.1:8000)
   - POOOLIFY_API_TOKEN
   - POOOLIFY_SESSION_ID (default demo)
-  - POOOLIFY_MODEL (default gpt-5)
+  - (No model selection in UI; backend manager config decides)
 
 Notes
 
