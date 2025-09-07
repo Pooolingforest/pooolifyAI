@@ -46,6 +46,18 @@ curl -X GET http://localhost:8000/v1/sessions/demo/conversation \
   -H "Authorization: Bearer ${API_TOKEN}"
 ```
 
+5. Optional: Run the Python-only Web UI (Streamlit)
+
+```
+# In another shell (backend from step 3 should be running on :8000)
+uv pip install -r pooolify/examples/01_streamlit_ui/requirements.txt
+uv run streamlit run pooolify/examples/01_streamlit_ui/app.py --server.address 0.0.0.0 --server.port 5173
+# Open http://localhost:5173
+```
+
+- Set API Base to `http://127.0.0.1:8000` and provide `API_TOKEN` if configured.
+- The UI posts to `POST /v1/chat` and polls `GET /v1/sessions/{session_id}/conversation`.
+
 Add your own Agent or Tool (folder autoload)
 
 - Agents are auto-discovered from `agent/*/index.py`.
