@@ -90,10 +90,57 @@ def get_health(api_base: str) -> Dict[str, Any]:
 
 
 # -----------------------------
+# Polling helpers
+# -----------------------------
+
+def _is_request_completed(conversation_data: Dict[str, Any]) -> bool:
+    try:
+        messages = conversation_data.get("conversation", [])
+        if not messages:
+            return False
+        last = messages[-1]
+        if last.get("type") == "MESSAGE_TYPE_COMPLETE":
+            return True
+        content = (last.get("content") or {})
+        completion_text = str(content.get("completion") or "").upper()
+        if completion_text in {"ORCHESTRATION_COMPLETED", "REQUEST_COMPLETED", "REQUEST_COMPLETED_WITH_ERROR"}:
+            return True
+    except Exception:  # noqa: BLE001
+        return False
+    return False
+
+
+def poll_conversation_until_complete(
+    *,
+    api_base: str,
+    token: Optional[str],
+    session_id: str,
+    timeout_s: float = 60.0,
+    interval_ms: int = 1000,
+) -> bool:
+    """Poll GET /v1/sessions/{id}/conversation until completed or timeout.
+
+    Returns True if completed detected, False if timed out.
+    """
+    deadline = time.time() + float(timeout_s)
+    sleep_s = max(0.1, float(int(interval_ms)) / 1000.0)
+    while time.time() < deadline:
+        try:
+            data = get_conversation(api_base=api_base, token=token, session_id=session_id)
+        except Exception:
+            time.sleep(sleep_s)
+            continue
+        if not data.get("current_request_id") or _is_request_completed(data):
+            return True
+        time.sleep(sleep_s)
+    return False
+
+
+# -----------------------------
 # UI
 # -----------------------------
 
-st.set_page_config(page_title="pooolify - Streamlit UI", layout="wide")
+st.set_page_config(page_title="pooolify - Streamlit UI (deprecated)", layout="wide")
 
 if "api_base" not in st.session_state:
     st.session_state.api_base = os.getenv("POOOLIFY_API_BASE", "http://127.0.0.1:8000")
@@ -146,7 +193,7 @@ with st.sidebar:
                 st.error(str(e))
 
 
-st.title("pooolify – Chat Console")
+st.title("pooolify – Chat Console (deprecated)")
 
 # Fetch conversation on each run
 conversation_error: Optional[str] = None
@@ -166,8 +213,15 @@ if conversation_data and isinstance(conversation_data, dict):
     processing = bool(conversation_data.get("current_request_id"))
 
 if processing and st.session_state.auto_refresh:
-    st.toast("Processing… auto-refreshing", icon="⏳")
-    st.autorefresh(interval=st.session_state.refresh_interval_ms, key="auto_refresh_key")
+    try:
+        st.toast("Processing… auto-refreshing", icon="⏳")
+    except Exception:
+        pass
+    time.sleep(max(0.1, float(int(st.session_state.refresh_interval_ms)) / 1000.0))
+    try:
+        st.experimental_rerun()
+    except Exception:
+        pass
 
 
 # Messages panel
@@ -215,7 +269,7 @@ with left:
 
 with right:
     st.subheader("Compose")
-    prompt = st.text_area("Message", value="안녕! 간단 테스트를 해보자.", height=140)
+    prompt = st.text_area("Message", value="", height=140)
 
     send_col, refresh_col = st.columns(2)
     with send_col:
@@ -229,19 +283,33 @@ with right:
                     model=st.session_state.model,
                 )
                 st.session_state.last_request_id = res.get("request_id")
-                st.success("Queued. Polling conversation…")
-                time.sleep(0.2)
-                st.rerun()
+                st.success("Queued. Starting polling…")
+                with st.spinner("Processing… polling conversation"):
+                    completed = poll_conversation_until_complete(
+                        api_base=st.session_state.api_base,
+                        token=st.session_state.api_token,
+                        session_id=st.session_state.session_id,
+                        timeout_s=120.0,
+                        interval_ms=int(st.session_state.refresh_interval_ms),
+                    )
+                if completed:
+                    st.success("Processing completed.")
+                else:
+                    st.info("Still processing; background auto-refresh will continue.")
+                try:
+                    st.experimental_rerun()
+                except Exception:
+                    pass
             except Exception as e:  # noqa: BLE001
                 st.error(str(e))
     with refresh_col:
         if st.button("Refresh", use_container_width=True):
-            st.rerun()
+            try:
+                st.experimental_rerun()
+            except Exception:
+                pass
 
 
-st.caption(
-    "This example calls POST /v1/chat and polls GET /v1/sessions/{id}/conversation. "
-    "Toggle 'Show internal thoughts' to view the manager's reasoning stream if available."
-)
+st.caption("This Streamlit example has been replaced by a Vite + React UI in this folder.")
 
 

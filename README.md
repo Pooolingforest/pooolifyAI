@@ -46,12 +46,13 @@ curl -X GET http://localhost:8000/v1/sessions/demo/conversation \
   -H "Authorization: Bearer ${API_TOKEN}"
 ```
 
-5. Optional: Run the Python-only Web UI (Streamlit)
+5. Optional: Run the Web UI (Vite + Tailwind)
 
 ```
 # In another shell (backend from step 3 should be running on :8000)
-uv pip install -r pooolify/examples/01_streamlit_ui/requirements.txt
-uv run streamlit run pooolify/examples/01_streamlit_ui/app.py --server.address 0.0.0.0 --server.port 5173
+cd pooolify/examples/01_streamlit_ui
+npm install
+npm run dev
 # Open http://localhost:5173
 ```
 
