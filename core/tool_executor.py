@@ -54,9 +54,9 @@ class ToolExecutor:
         if not agent.tools:
             prompt = (
                 self.agent_manager._compose_system_prompt(agent)
-                + ("\n\n에이전트 지시사항: " + instruction if instruction else "")
-                + ("\n\n이전 에이전트 컨텍스트:\n" + context if context else "")
-                + "\n\n요구사항: 한국어로 간결하고 정확하게 답변하세요. 결과는 JSON으로, {\"text\": string} 형태로 출력하세요."
+                + ("\n\nAgent instruction: " + instruction if instruction else "")
+                + ("\n\nPrevious agent context:\n" + context if context else "")
+                + "\n\nRequirement: Answer concisely and accurately in English. Return JSON in the form {\"text\": string}."
             )
 
             def _agent_direct_text(delta: str) -> None:
@@ -198,14 +198,14 @@ class ToolExecutor:
             # 1) 계획 생성
             plan_prompt = (
                 self.agent_manager._compose_system_prompt(agent)
-                + "\n\n당신은 위 역할을 수행하는 전문가입니다.\n"
-                + ("에이전트 지시사항: " + local_instruction + "\n" if local_instruction else "")
-                + ("이전 에이전트 컨텍스트:\n" + context + "\n" if context else "")
-                + ("개선 지시사항:\n" + improvement_notes + "\n" if improvement_notes else "")
-                + "아래 툴 카탈로그를 참고하여 사용자가 원하는 결과를 얻기 위해 필요한 툴 호출 계획을 필요한 만큼 작성하세요. 같은 도구를 명확히 다른 목적/입력으로 여러 번 호출해도 됩니다.\n"
-                + "출력은 JSON Schema에 맞춰 {isRunTool:boolean, calls:[{tool,reason}], text:string} 를 생성하세요.\n"
-                + "중요: 이 단계에서는 args를 생성하지 마세요. 각 도구의 인자는 실행 단계에서 별도로 생성됩니다.\n"
-                + "툴 카탈로그:\n"
+                + "\n\nYou are an expert performing the role above.\n"
+                + ("Agent instruction: " + local_instruction + "\n" if local_instruction else "")
+                + ("Previous agent context:\n" + context + "\n" if context else "")
+                + ("Improvement notes:\n" + improvement_notes + "\n" if improvement_notes else "")
+                + "Using the tool catalog below, write as many tool-call plans as needed to achieve the user's goal. You may call the same tool multiple times with clearly different purposes/inputs.\n"
+                + "Output must be a JSON object matching the schema {isRunTool:boolean, calls:[{tool,reason}], text:string}.\n"
+                + "Important: Do NOT generate args at this step. Arguments for each tool will be generated during the execution phase.\n"
+                + "Tool catalog:\n"
                 + tool_catalog
             )
             
@@ -290,35 +290,35 @@ class ToolExecutor:
                     # 2) 실행 컨텍스트 구성
                     exec_context_parts: List[str] = []
                     if local_instruction:
-                        exec_context_parts.append("에이전트 지시사항: " + local_instruction)
+                        exec_context_parts.append("Agent instruction: " + local_instruction)
                     if context:
-                        exec_context_parts.append("이전 에이전트 컨텍스트:\n" + context)
+                        exec_context_parts.append("Previous agent context:\n" + context)
                     if improvement_notes:
-                        exec_context_parts.append("개선 지시사항:\n" + improvement_notes)
+                        exec_context_parts.append("Improvement notes:\n" + improvement_notes)
                     if call_reason:
-                        exec_context_parts.append("도구 사용 목적(reason): " + call_reason)
+                        exec_context_parts.append("Purpose of tool use (reason): " + call_reason)
                     exec_context = "\n\n".join(exec_context_parts)
 
                     # 최근 도구 결과를 컨텍스트에 포함(가능 시)
                     recent_context = ""
                     try:
                         if last_tool_outputs:
-                            recent_context = "최근 도구 결과 요약:\n" + json.dumps(last_tool_outputs, ensure_ascii=False) + "\n\n"
+                            recent_context = "Recent tool results summary:\n" + json.dumps(last_tool_outputs, ensure_ascii=False) + "\n\n"
                     except Exception:
                         recent_context = ""
 
                     arggen_prompt = (
                         self.agent_manager._compose_system_prompt(agent)
-                        + "\n\n아래 도구를 지금 호출하기 위한 적법한 args JSON만 생성하세요. 설명/코드펜스 금지. 하나의 JSON 객체만 출력.\n"
-                        + "규칙:\n"
-                        + "- 도구 시그니처에 존재하는 키만 포함하세요. 불필요한 키 금지.\n"
-                        + "- internal_api: 'path'는 명세 내 경로만, 절대 URL 금지. base_url/headers는 포함하지 마세요.\n"
-                        + "- 시간/날짜는 KST 기준 리터럴(YYYY-MM-DD 등)로 작성. placeholder 금지.\n"
-                        + "- method는 필요 시 올바른 HTTP 메서드 지정.\n\n"
-                        + "도구 스펙:\n" + current_tool_desc + "\n\n"
+                        + "\n\nGenerate only a valid args JSON to call the tool below right now. No explanations or code fences. Output exactly one JSON object.\n"
+                        + "Rules:\n"
+                        + "- Include only keys that exist in the tool signature. No unnecessary keys.\n"
+                        + "- internal_api: 'path' must be a path from the spec; never an absolute URL. Do not include base_url/headers.\n"
+                        + "- Times/dates must be KST literals (e.g., YYYY-MM-DD). No placeholders.\n"
+                        + "- Set method to the correct HTTP method when needed.\n\n"
+                        + "Tool spec:\n" + current_tool_desc + "\n\n"
                         + recent_context
                         + (exec_context + "\n\n" if exec_context else "")
-                        + "출력: args JSON 하나"
+                        + "Output: one args JSON object"
                     )
 
                     generated_args_text, _prov_gen, _usage_gen = await llm_stream_text(
@@ -381,17 +381,17 @@ class ToolExecutor:
 
                             repair_prompt = (
                                 system_text
-                                + "\n\n도구 호출이 실패했습니다. 아래 정보를 참고하여 같은 도구를 즉시 재시도할 수 있도록 수정된 args JSON만 출력하세요.\n"
-                                + "규칙:\n"
-                                + "- 반드시 하나의 JSON 객체만 출력합니다. 설명/마크다운/코드펜스 금지.\n"
-                                + "- 키는 도구 시グ니처에 맞춰 작성합니다. 불필요한 키 금지.\n"
-                                + "- placeholder(${...}) 금지. 반드시 리터럴 값만 사용.\n"
-                                + "- internal_api인 경우 'path'는 명세에 존재하는 경로여야 하며, 절대 URL 금지. base_url/headers는 포함하지 마세요.\n"
-                                + "- 시간/날짜가 필요한 경우 KST 기준으로 YYYY-MM-DD 등 명확한 리터럴을 사용합니다. 알 수 없으면 합리적 기본값을 사용하세요.\n"
-                                + "- method는 적절한 HTTP 메서드로 설정하세요.\n\n"
-                                + "도구 스펙:\n" + current_tool_desc + "\n\n"
-                                + "이전 호출 args(JSON):\n" + json.dumps(args, ensure_ascii=False) + "\n\n"
-                                + "실패 결과:\n" + error_text + "\n"
+                                + "\n\nThe tool call failed. Using the information below, output only a corrected args JSON so that the same tool can be retried immediately.\n"
+                                + "Rules:\n"
+                                + "- Output exactly one JSON object. No explanations/markdown/code fences.\n"
+                                + "- Keys must match the tool signature. No unnecessary keys.\n"
+                                + "- No placeholders (${...}). Use literal values only.\n"
+                                + "- For internal_api, 'path' must be a documented path; never an absolute URL. Do not include base_url/headers.\n"
+                                + "- When time/date is needed, use explicit KST literals such as YYYY-MM-DD. If unknown, use a reasonable default.\n"
+                                + "- Set method to an appropriate HTTP method.\n\n"
+                                + "Tool spec:\n" + current_tool_desc + "\n\n"
+                                + "Previous args (JSON):\n" + json.dumps(args, ensure_ascii=False) + "\n\n"
+                                + "Failure result:\n" + error_text + "\n"
                             )
 
                             repaired_text, _prov, _usage = await llm_stream_text(
@@ -456,11 +456,11 @@ class ToolExecutor:
 
             improve_prompt = (
                 self.agent_manager._compose_system_prompt(agent)
-                + "\n\n다음 도구 결과를 바탕으로 품질 평가를 수행하고, 충족 시 최종 요약을 한 번에 작성하세요.\n"
-                + "반환은 {tryAgain:boolean, reason:string, improvements:string, revisedInstruction?:string, qualityScore?:number, finalText?:string} JSON입니다.\n"
-                + "정책:\n- 데이터/쿼리가 필요한데 도구 미사용 또는 실패 시 tryAgain=true\n- 답변이 모호/누락/부정확하면 tryAgain=true와 함께 improvements 제시\n- 충분히 충족하면 tryAgain=false와 함께 finalText에 사용자 응답을 한국어로 간결하게 작성\n"
-                + ("휴리스틱 신호: " + ", ".join(heuristic_signals) + "\n" if heuristic_signals else "")
-                + "\n도구 결과 요약:\n" + (tool_outputs_text or "(없음)")
+                + "\n\nBased on the following tool results, perform a quality check and, if satisfied, produce the final summary in one step.\n"
+                + "Return JSON of the form {tryAgain:boolean, reason:string, improvements:string, revisedInstruction?:string, qualityScore?:number, finalText?:string}.\n"
+                + "Policy:\n- If data/queries are needed but tools were not used or failed, set tryAgain=true\n- If the answer is vague/missing/inaccurate, set tryAgain=true and provide improvements\n- If sufficiently satisfied, set tryAgain=false and write finalText as a concise English response for the user\n"
+                + ("Heuristic signals: " + ", ".join(heuristic_signals) + "\n" if heuristic_signals else "")
+                + "\nSummary of tool results:\n" + (tool_outputs_text or "(none)")
             )
 
             def _improve_text(delta: str) -> None:

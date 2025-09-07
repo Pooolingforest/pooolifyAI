@@ -64,16 +64,16 @@ class AgentManager:
         knowledge_text = (agent.knowledge or "").strip()
 
         if role_text:
-            parts.append(f"당신은 {role_text}입니다.")
+            parts.append(f"You are {role_text}.")
         if background_text:
             parts.append(background_text)
         if goal_text:
-            parts.append(f"- 목표: {goal_text}")
+            parts.append(f"- Goal: {goal_text}")
         if knowledge_text:
-            parts.append("기본 지식:\n" + knowledge_text)
+            parts.append("Baseline knowledge:\n" + knowledge_text)
 
         if not parts:
-            return "당신은 전문가 에이전트입니다. 한국어로 간결하고 정확하게 답변하세요."
+            return "You are an expert agent. Answer concisely and accurately in English."
         return "\n".join(parts)
     
     def find_tool(self, tool_name: str) -> Optional[Tuple[AgentDefinition, Tool]]:
