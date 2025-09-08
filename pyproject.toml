@@ -1,6 +1,6 @@
 [project]
 name = "pooolify"
-version = "0.2.0"
+version = "0.3.0"
 description = "pooolify: Code-centric Python framework for multi-agent LLM orchestration with FastAPI + PostgreSQL persistence"
 readme = "README.md"
 requires-python = ">=3.10"
