@@ -23,32 +23,40 @@ Architecture overview
 
 Quickstart (1 minute)
 
-1. Clone and install
+1. Install (PyPI)
 
 ```
-git clone https://github.com/Pooolingforest/pooolifyAI
-cd pooolify
-uv sync
-# or: uv pip install -e .
+pip install -U pooolify
 ```
 
-2. Set environment
+2. Scaffold a new project (CLI)
 
 ```
-export LLM_OPENAI_API_KEY=sk-...   # required for gpt-5/gpt-5-high
-export APP_ENV=dev                 # dev allows no auth if API_TOKEN is unset
+pooolify create new my-app
+cd my-app
+```
+
+3. Create .env in your project (my-app/.env)
+
+```
+LLM_OPENAI_API_KEY=sk-...   # required for gpt-5/gpt-5-high
+APP_ENV=dev                 # dev allows no auth if API_TOKEN is unset
 # optional auth
-# export API_TOKEN=your-token
+# API_TOKEN=your-token
 ```
 
-3. Run an example (start here)
+4. Run the backend (in the project directory)
 
 ```
-# Minimal single-agent greeter (bundled)
-uv run uvicorn pooolify.examples.00_simple_agent.main:app --reload
+# Install deps and run
+uv sync
+uv run uvicorn main:app --reload
+
+# Tip: You can also run the bundled example directly (no scaffold)
+# python -m uvicorn pooolify.examples.00_simple_agent.main:app --reload
 ```
 
-4. Make a request (async processing + polling)
+5-1. Make a request (async processing + polling)
 
 ```
 curl -X POST http://localhost:8000/v1/chat \
@@ -60,7 +68,7 @@ curl -X GET http://localhost:8000/v1/sessions/demo/conversation \
   -H "Authorization: Bearer ${API_TOKEN}"
 ```
 
-5. Optional: Run the Web UI (Vite + Tailwind)
+5-2. Optional: Run the Web UI (Vite + Tailwind)
 
 ```
 # In another shell (backend from step 3 should be running on :8000)

@@ -1,0 +1,10 @@
+[project]
+name = "pooolify-example"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+  "pooolify @ file:///Users/scy/Documents/BuffettGround/agent",
+]
+
+[tool.uv]
+# Add dev-only dependencies here if needed

@@ -17,7 +17,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Pooolingforest/pooolify"
+Homepage = "https://github.com/Pooolingforest/pooolifyAI"
+
+[project.scripts]
+pooolify = "pooolify.cli:main"
 
 [tool.uv]
 dev-dependencies = [
@@ -28,5 +31,22 @@ dev-dependencies = [
 [build-system]
 requires = ["hatchling>=1.25.0"]
 build-backend = "hatchling.build"
+
+
+[tool.hatch.build]
+include = [
+  "**/*.py",
+  "README.md",
+  "LICENSE",
+  "docs/**",
+  "examples/**",
+  "db/ddl.sql",
+]
+exclude = [
+  "examples/01_web_ui/node_modules/**",
+  "dist/**",
+  "**/__pycache__/**",
+  "**/*.pyc",
+]
 
 
