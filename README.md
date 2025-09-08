@@ -1,6 +1,6 @@
 ![pooolifyAI logo](docs/image/mainlogo.png)
 
-pooolify — Build multi‑AI agents backend in 1 minute
+pooolify — A Manager AI to orchestrate your agent team
 
 Overview
 
