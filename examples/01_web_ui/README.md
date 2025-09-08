@@ -2,6 +2,8 @@ pooolify Web UI (Vite + Tailwind)
 
 A minimal web UI built with React (Vite) and TailwindCSS that calls the pooolify API.
 
+Note: For most users, we recommend the plain HTML UI under `my-app/web` or `pooolify/examples/00_simple_agent/web` — open `index.html` directly in the browser.
+
 Backend
 
 - Start the example backend first:

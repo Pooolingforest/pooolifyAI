@@ -50,30 +50,23 @@ uv sync
 uv run uvicorn main:app --reload
 ```
 
-5-1. Make a request (async processing + polling)
+5-1. Recommended: Run the Web UI (Plain HTML)
+
+```
+# In another shell (backend from step 4 should be running on :8000)
+# Open directly:
+#   my-app/web/index.html
+```
+
+5-2. Make a request (async processing + polling)
 
 ```
 curl -X POST http://localhost:8000/v1/chat \
   -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer ${API_TOKEN}" \
   -d '{"session_id":"demo","query":"Say hi to Alice and summarize next steps."}'
 
-curl -X GET http://localhost:8000/v1/sessions/demo/conversation \
-  -H "Authorization: Bearer ${API_TOKEN}"
+curl -X GET http://localhost:8000/v1/sessions/demo/conversation
 ```
-
-5-2. Optional: Run the Web UI (Vite + Tailwind)
-
-```
-# In another shell (backend from step 3 should be running on :8000)
-cd pooolify/examples/01_web_ui
-npm install
-npm run dev
-# Open http://localhost:5173
-```
-
-- Set API Base to `http://127.0.0.1:8000` and provide `API_TOKEN` if configured.
-- The UI posts to `POST /v1/chat` and polls `GET /v1/sessions/{session_id}/conversation`.
 
 Add your own Agent or Tool (folder autoload)
 
