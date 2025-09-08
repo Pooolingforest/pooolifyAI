@@ -1,2 +1,0 @@
-This example migrated to Vite + React.
-Python dependencies are no longer used here.

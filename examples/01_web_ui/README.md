@@ -10,7 +10,7 @@ Backend
 
 Frontend (Vite + Tailwind)
 
-- cd pooolify/examples/01_streamlit_ui
+- cd pooolify/examples/01_web_ui
 - npm install
 - npm run dev
 

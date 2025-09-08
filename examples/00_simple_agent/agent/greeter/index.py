@@ -8,20 +8,14 @@ from pooolify.tools.base import Tool
 
 
 def build_agent(tools: Dict[str, Tool], base_dir: Path) -> AgentDefinition:  # noqa: ARG001
+    # Deprecated placeholder to avoid accidental loading conflicts.
+    # Keeping file to preserve directory structure; manager does not schedule this agent.
     return AgentDefinition(
-        name="greeter",
-        role="Simple greeter and echo agent",
-        goal=(
-            "Greet the user warmly in English and provide a concise helpful answer."
-        ),
-        background="Customer success specialist focused on clarity and brevity.",
-        knowledge=(
-            "Rules:\n"
-            "- Keep answers short (<= 3 sentences).\n"
-            "- If the user provides a name, greet using that name.\n"
-            "- If a factual lookup is required, say you are a simple greeter and cannot browse.\n"
-            "Output format: return a JSON object {\"text\": string}."
-        ),
+        name="greeter_deprecated",
+        role="Deprecated placeholder",
+        goal="Do not use.",
+        background="",
+        knowledge="",
         model="gpt-5",
         tools=[],
         max_loops=1,

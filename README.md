@@ -50,7 +50,7 @@ curl -X GET http://localhost:8000/v1/sessions/demo/conversation \
 
 ```
 # In another shell (backend from step 3 should be running on :8000)
-cd pooolify/examples/01_streamlit_ui
+cd pooolify/examples/01_web_ui
 npm install
 npm run dev
 # Open http://localhost:5173
