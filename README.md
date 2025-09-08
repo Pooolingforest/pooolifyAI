@@ -41,19 +41,13 @@ cd my-app
 ```
 LLM_OPENAI_API_KEY=sk-...   # required for gpt-5/gpt-5-high
 APP_ENV=dev                 # dev allows no auth if API_TOKEN is unset
-# optional auth
-# API_TOKEN=your-token
 ```
 
 4. Run the backend (in the project directory)
 
 ```
-# Install deps and run
 uv sync
 uv run uvicorn main:app --reload
-
-# Tip: You can also run the bundled example directly (no scaffold)
-# python -m uvicorn pooolify.examples.00_simple_agent.main:app --reload
 ```
 
 5-1. Make a request (async processing + polling)
