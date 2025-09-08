@@ -1,11 +1,25 @@
 ![pooolifyAI logo](docs/image/mainlogo.png)
 
-pooolify — A Manager AI to orchestrate your agent team
+pooolify — The Manager-led framework for orchestrating AI agent teams
 
 Overview
 
-- "An AI backend framework to build and operate multi‑agent systems in minutes."
-- Manager‑centric orchestration with parallel execution, clean Python DX, and full observability.
+- An AI backend framework to build and operate multi‑agent systems in minutes.
+
+Architecture overview
+
+- Manager‑centric orchestration
+  - Plans and schedules agent tasks into steps; supports parallel (PARALLEL) and isolated (ISOLATED) tasks.
+  - Produces a final summary after agent runs; can loop if incomplete (bounded).
+- Agents
+  - Declared via `AgentDefinition` (role, goal, background, knowledge, model, tools, max_loops).
+  - Per‑agent system prompt is composed automatically; optional docs in `agent/<name>/docs/` are merged into `knowledge`.
+- Tools and execution
+  - Tools implement a standard `Tool` interface; arguments are generated, validated, and executed with safe logging.
+  - Tool plans -> arg generation -> execution -> result improvement loop.
+- API and app
+  - FastAPI app; POST `/v1/chat`, GET `/v1/sessions/{id}/conversation`, health endpoints.
+  - Optional PostgreSQL persistence for sessions, costs, and audit trails; if DB init fails in dev, the app still runs.
 
 Quickstart (1 minute)
 
@@ -126,21 +140,6 @@ Supported LLM models
 
 - OpenAI: `gpt-5`, `gpt-5-high`
 - Set `LLM_OPENAI_API_KEY` in the environment.
-
-Architecture overview
-
-- Manager‑centric orchestration
-  - Plans and schedules agent tasks into steps; supports parallel (PARALLEL) and isolated (ISOLATED) tasks.
-  - Produces a final summary after agent runs; can loop if incomplete (bounded).
-- Agents
-  - Declared via `AgentDefinition` (role, goal, background, knowledge, model, tools, max_loops).
-  - Per‑agent system prompt is composed automatically; optional docs in `agent/<name>/docs/` are merged into `knowledge`.
-- Tools and execution
-  - Tools implement a standard `Tool` interface; arguments are generated, validated, and executed with safe logging.
-  - Tool plans -> arg generation -> execution -> result improvement loop.
-- API and app
-  - FastAPI app; POST `/v1/chat`, GET `/v1/sessions/{id}/conversation`, health endpoints.
-  - Optional PostgreSQL persistence for sessions, costs, and audit trails; if DB init fails in dev, the app still runs.
 
 Design philosophy (brief)
 
