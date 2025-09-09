@@ -9,7 +9,7 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union, Callable
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -205,7 +205,21 @@ class ConversationMessage:
             result["agent"] = self.agent
             
         if self.timestamp:
-            result["timestamp"] = self.timestamp.isoformat()
+            # 출력은 KST(+0900) 오프셋이 포함된 "YYYY-MM-DD HH:MM:SS.sss +0900" 형태로 통일
+            ts = self.timestamp
+            # naive인 경우 UTC로 가정 후 KST로 변환
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            try:
+                from zoneinfo import ZoneInfo  # type: ignore
+
+                kst = ZoneInfo("Asia/Seoul")
+            except Exception:  # noqa: BLE001
+                kst = timezone(timedelta(hours=9), name="KST")
+
+            ts_kst = ts.astimezone(kst)
+            # 예: 2025-09-08 10:00:21.239 +0900
+            result["timestamp"] = ts_kst.strftime("%Y-%m-%d %H:%M:%S.%f %z")[:-3]
             
         if self.metadata:
             result["metadata"] = self.metadata
@@ -580,9 +594,39 @@ class ConversationAccumulator:
         return [msg for msg in self.conversation if msg.agent == agent]
 
     def to_dict(self) -> Dict[str, Any]:
-        """전체 대화를 딕셔너리로 변환"""
+        """전체 대화를 딕셔너리로 변환 (timestamp 오름차순, 같은 초에는 HUMAN 우선)"""
+        def _to_epoch(ts: Optional[datetime]) -> float:
+            if isinstance(ts, datetime):
+                try:
+                    return ts.timestamp()
+                except Exception:
+                    return 0.0
+            return 0.0
+        
+        def _to_epoch_sec(ts: Optional[datetime]) -> int:
+            return int(_to_epoch(ts))
+
+        def _type_priority(t: MessageType) -> int:
+            if t == MessageType.HUMAN:
+                return 0
+            if t == MessageType.AI:
+                return 1
+            if t == MessageType.COMPLETE:
+                return 2
+            return 99
+
+        sorted_messages = sorted(
+            self.conversation,
+            key=lambda m: (
+                _to_epoch_sec(m.timestamp),
+                _type_priority(m.type),
+                m.bubble_id or "",
+            ),
+            reverse=False,
+        )
+
         return {
-            "conversation": [msg.to_dict() for msg in self.conversation],
+            "conversation": [msg.to_dict() for msg in sorted_messages],
             "session_id": self.session_id,
             "current_request_id": self.current_request_id,
             "message_count": len(self.conversation)

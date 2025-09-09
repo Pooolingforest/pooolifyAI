@@ -229,6 +229,37 @@ class PooolifyApp:
                     agent=[]
                 )
             
+            # 매니저 실행 계획을 conversation.plan에 구조화(JSON)로 기록
+            try:
+                plan_payload: Dict[str, Any] = {
+                    "text": analysis_result.text,
+                    "isRunAgent": analysis_result.isRunAgent,
+                    "agent": [
+                        (
+                            a.model_dump()  # pydantic v2
+                            if hasattr(a, "model_dump") else {
+                                "name": getattr(a, "name", None),
+                                "instruction": getattr(a, "instruction", ""),
+                                "order": getattr(a, "order", None),
+                                "step": int(getattr(a, "step", 1) or 1),
+                                "runMode": str(getattr(a, "runMode", "PARALLEL")),
+                                "dependsOn": list(getattr(a, "dependsOn", []) or []),
+                                "outputsTo": list(getattr(a, "outputsTo", []) or []),
+                            }
+                        )
+                        for a in (analysis_result.agent or [])
+                    ],
+                }
+                conversation.accumulate_plan(json.dumps(plan_payload, ensure_ascii=False))
+            except Exception:
+                try:
+                    conversation.accumulate_plan(json.dumps({
+                        "isRunAgent": bool(getattr(analysis_result, "isRunAgent", False)),
+                        "agentCount": len(getattr(analysis_result, "agent", []) or []),
+                    }, ensure_ascii=False))
+                except Exception:
+                    pass
+
             print("analysis_result.isRunAgent: ", analysis_result.isRunAgent)
             print("analysis_result.agent: ", analysis_result.agent)
 

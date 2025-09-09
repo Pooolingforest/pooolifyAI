@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 import asyncio
 
 from ..persistence import db as dbops
@@ -125,6 +126,10 @@ class ConversationManager:
                     agent=msg_data.get("agent"),
                     metadata=msg_data.get("metadata", {})
                 )
+                # DB 생성 시각을 메시지 타임스탬프로 매핑
+                created_ts = msg_data.get("created_at")
+                if isinstance(created_ts, datetime):
+                    message.timestamp = created_ts
                 
                 # 도구 호출 결과 복원
                 if msg_data.get("tool_results"):
